@@ -1,0 +1,4 @@
+Fourier Transforms 
+cosine
+sine
+The Fourier Series allows us to model any arbitrary periodic signal with a combination of sines and cosines.
