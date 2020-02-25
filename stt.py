@@ -1,6 +1,7 @@
 from configparser import ConfigParser
 from pathlib import Path
 from string import Template
+
 import requests
 import json
 
@@ -18,8 +19,8 @@ class WatsonSTT(object):
 
     def create_model(self, name, descr, model="en-US_BroadbandModel") -> str:
         headers = {'Content-Type': 'application/json',}
-        data = {"name": name, 
-                "base_model_name": model, 
+        data = {"name": name,
+                "base_model_name": model,
                 "description": descr}
         data = json.dumps(data)
         
@@ -38,20 +39,20 @@ class WatsonSTT(object):
 
             return response['customization_id']
         
-        elif response.status_code == 400:
+        if response.status_code == 400:
             raise ValueError(response.text)
 
-        elif response.status_code == 401:
+        if response.status_code == 401:
             raise ValueError("The credentials are invalid")
         
-        elif response.status_code == 500:
+        if response.status_code == 500:
             raise ValueError("Internal Server Error")
     
     def training(self):
         if self.customization_id is None:
-           raise ValueError("No customization id provided!")
+            raise ValueError("No customization id provided!")
 
-        if self.model_status() is 'pending':
+        if self.model_status() == 'pending':
             print("Add a corpus, by calling the add_corpus() function!")
             
             return
@@ -59,8 +60,8 @@ class WatsonSTT(object):
         if self.customization_id:
             # check status
             polling.poll(lambda: self.model_status() == 'ready',
-                     step=0.1,
-                     poll_forever=True)
+                         step=0.1,
+                         poll_forever=True)
 
         print("Training Beginning")
 
@@ -90,8 +91,8 @@ class WatsonSTT(object):
         data = open(str(path), 'rb').read()
         corpus_name = path.stem
 
-        response = requests.post(f'{self.url}/v1/customizations/{self.customization_id}/corpora/{corpus_name}', 
-                                 data=data, auth=('apikey', self.API_KEY))
+        url = f'{self.url}/v1/customizations/{self.customization_id}/corpora/{corpus_name}'
+        response = requests.post(url, data=data, auth=('apikey', self.API_KEY))
         
 
         if response.status_code == 201:
@@ -133,7 +134,10 @@ class WatsonSTT(object):
         content_type = path_to_audio_file.suffix.replace('.', '') # parse the audio file type from the stem
         sync_url = f"{url}/v1/recognize?language_customization_id={customization_id}"
         headers = {'Content-Type': f'audio/{content_type}'}
-        response = requests.post(url=sync_url, data=audio_file, headers=headers, auth=('apikey', self.API_KEY))
+        response = requests.post(url=sync_url, 
+                                 data=audio_file, 
+                                 headers=headers, 
+                                 auth=('apikey', self.API_KEY))
 
         response = json.loads(response.text)
 
@@ -149,29 +153,30 @@ class WatsonSTT(object):
     
     @staticmethod
     def delete_model(url=None, api_key=None, customization_id=None):
-       requests.delete(f'{url}/v1/customizations/{customization_id}', auth=('apikey', api_key))
+        requests.delete(f'{url}/v1/customizations/{customization_id}', auth=('apikey', api_key))
 
-       print()
-       print(f"Deleting model with id: {customization_id}")
+        print()
+        print(f"Deleting model with id: {customization_id}")
 
-       polling.poll(lambda: WatsonSTT.model_deletion_checker(url, api_key, customization_id),
-                    step=0.01,
-                    poll_forever=True)
+        polling.poll(lambda: WatsonSTT.model_deletion_checker(url, api_key, customization_id),
+                     step=0.01,
+                     poll_forever=True)
         
-       print(f"Model {customization_id} Succesfully Deleted")
-       print()
+        print(f"Model {customization_id} Succesfully Deleted")
+        print()
     
     @staticmethod
     def model_deletion_checker(url, api_key, customization_id):
-       response = requests.get(f'{url}/v1/customizations/{customization_id}', 
+        response = requests.get(f'{url}/v1/customizations/{customization_id}', 
                                 auth=('apikey', api_key))
 
 
-       if response.status_code in [200, 401]:
-           return True
+        if response.status_code in [200, 401]:
+            return True
         
-       if response.status_code in [400, 500]:
-           raise Exception(response.text)
+        if response.status_code in [400, 500]:
+            raise Exception(response.text)
+
         
 
 
