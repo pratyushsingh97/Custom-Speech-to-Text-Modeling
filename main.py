@@ -14,7 +14,9 @@ def main():
     argparser.add_argument('--url', help="This is the URL of the Watson STT model. Found on the start page of the Watson STT tooling.")
     argparser.add_argument('--oov_file_path', help="The path of the out-of-vocabulary file (the corpus, words, or grammar)")
     argparser.add_argument('-v', '--verbose', '--list_models',  help="Shows you all of the models trained on this account", action="store_true")
-    argparser.add_argument('--delete', help="Pass the customization id of the models to delete", action="store_true")
+    argparser.add_argument('--delete', help="Pass the customization id of the models to delete")
+    argparser.add_argument('--eval', help="Evaluate the trained model against an audio-file. \nPass in the \'customization_id\' of the model or pass \'latest\' to train the latest trained model. \nThe \'audio_file\' flag must be set as well!")
+    argparser.add_argument('--audio_file', help="The path of the audio file to transcribe.")
 
     args = argparser.parse_args()
 
@@ -24,20 +26,39 @@ def main():
     file_path = args.oov_file_path
     verbose = args.verbose
     delete = args.delete
+    evaluate = args.eval
+    audio_file = args.audio_file
 
+    customization_id = None
 
     if name and descr and url and file_path:
         custom_stt = WatsonSTT(url=url)
-        customization_id = custom_stt.create_model(name=name,
-                                                descr=descr)
+        customization_id = custom_stt.create_model(name=name, descr=descr)
         custom_stt.add_corpus(file_path)
         custom_stt.training()
+
+        #print("Beginning to evaluate model...")
+        #custom_stt.transcribe('assets/sample_recording.flac')
 
     if url and verbose:
         model_status(url)
     
     if url and delete:
         clean_up(url, delete)
+    
+    if url and evaluate and audio_file:
+        custom_stt = WatsonSTT(url=url)
+        # @TODO: build this out
+        if evaluate == 'latest':
+            pass
+
+        print("Transcribing the audio file...")
+        results = custom_stt.transcribe('assets/sample_recording.flac', url=url, customization_id=evaluate)
+        print("Transcribing finished")
+        print()
+        print()
+        pprint(results)
+        
 
 
 def model_status(url):
@@ -55,8 +76,24 @@ def clean_up(url, customization_ids):
     config.read('keys/conf.ini')
     api_key = config['API_KEY']['WATSON_STT_API']
 
-    for ids in customization_ids:
-        WatsonSTT.delete_model(url, api_key, customization_id=ids)
+    if customization_ids == 'all':
+        confirmation = input('Are you sure you want to delete all of the trained models? (y/N): ')
+        confirmation = confirmation.strip().lower()
+
+        if confirmation == 'y' or confirmation == 'yes':
+            models = WatsonSTT.all_model_status(url=url, api_key=api_key)
+            models = models['customizations']
+
+            for model in models:
+                _id = model['customization_id']
+                WatsonSTT.delete_model(url, api_key, _id)
+        else:
+            print("Could not understand response.")
+
+            return
+    else:
+        for ids in customization_ids:
+            WatsonSTT.delete_model(url, api_key, customization_id=ids)
 
 if __name__ == "__main__":
     main()
