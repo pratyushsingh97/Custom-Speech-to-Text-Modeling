@@ -153,17 +153,47 @@ class WatsonSTT(object):
     
     @staticmethod
     def delete_model(url=None, api_key=None, customization_id=None):
-        requests.delete(f'{url}/v1/customizations/{customization_id}', auth=('apikey', api_key))
+        try:
+            response = requests.delete(f'{url}/v1/customizations/{customization_id}', auth=('apikey', api_key))
 
-        print()
-        print(f"Deleting model with id: {customization_id}")
+            if response.status_code == 200:
+                print()
+                print(f"Deleting model with id: {customization_id}")
 
-        polling.poll(lambda: WatsonSTT.model_deletion_checker(url, api_key, customization_id),
-                     step=0.01,
-                     poll_forever=True)
-        
-        print(f"Model {customization_id} Succesfully Deleted")
-        print()
+                polling.poll(lambda: WatsonSTT.model_deletion_checker(url, api_key, customization_id),
+                            step=0.01,
+                            poll_forever=True)
+                
+                print(f"Model {customization_id} Succesfully Deleted")
+                print()
+            
+            elif response.status_code == 400:
+                print()
+                print(response.text)
+                print()
+
+            elif response.status_code == 401:
+                print()
+                print(response.text)
+                print()
+            
+            elif response.status_code == 409:
+                print()
+                print(response.text)
+                print()
+            
+            elif response.status_code == 500:
+                print()
+                print(response.status_code)
+                print()
+            
+            else:
+                print()
+                print("An unexpected error occurred")
+
+        except Exception as e:
+                print(e)
+    
     
     @staticmethod
     def model_deletion_checker(url, api_key, customization_id):
