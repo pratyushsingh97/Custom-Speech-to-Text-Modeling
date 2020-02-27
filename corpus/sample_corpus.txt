@@ -2,3 +2,6 @@ Fourier Transforms
 cosine
 sine
 The Fourier Series allows us to model any arbitrary periodic signal with a combination of sines and cosines.
+My name is Prat, and it is derived from Sanskrit
+My name is Prat
+My name is Prat

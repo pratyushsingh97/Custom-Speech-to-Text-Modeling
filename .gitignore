@@ -1,6 +1,7 @@
 __pycache__/
-assets/*
-keys/*
+assets/
+keys/
+misc/
 .DS_Store
 
 

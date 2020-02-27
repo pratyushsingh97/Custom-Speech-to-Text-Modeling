@@ -43,6 +43,11 @@ def main():
         custom_stt.add_corpus(file_path)
         custom_stt.training()
 
+    if url and file_path:
+        # @TODO: training a model with an existing uploaded corpus
+        custom_stt = WatsonSTT(url=url)
+        custom_stt.add_corpus(file_path)
+
     if url and verbose:
         model_status(url)
     
