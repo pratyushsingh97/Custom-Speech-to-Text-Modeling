@@ -1,9 +1,10 @@
-from stt import WatsonSTT
-
 import argparse
 from configparser import ConfigParser
 from pprint import pprint
 
+from tqdm import tqdm
+
+from stt import WatsonSTT
 
 def main():
     # setting up the command line
@@ -11,11 +12,18 @@ def main():
 
     argparser.add_argument('--name', help="Name of the model")
     argparser.add_argument('--descr', help="A short description of the custom model")
-    argparser.add_argument('--url', help="This is the URL of the Watson STT model. Found on the start page of the Watson STT tooling.")
-    argparser.add_argument('--oov_file_path', help="The path of the out-of-vocabulary file (the corpus, words, or grammar)")
-    argparser.add_argument('-v', '--verbose', '--list_models',  help="Shows you all of the models trained on this account", action="store_true")
-    argparser.add_argument('--delete', help="Pass the customization id of the models to delete")
-    argparser.add_argument('--eval', help="Evaluate the trained model against an audio-file. \nPass in the \'customization_id\' of the model or pass \'latest\' to train the latest trained model. \nThe \'audio_file\' flag must be set as well!")
+    argparser.add_argument('--url', help="This is the URL of the Watson STT model. \
+                                           Found on the start page of the Watson STT tooling.", required=True)
+    argparser.add_argument('--oov_file_path', help="The path of the out-of-vocabulary \
+                                                    file (the corpus, words, or grammar)")
+    argparser.add_argument('-v', '--verbose', '--list_models', help="Shows you all \
+                                                                     of the models trained on this account", \
+                                                                action="store_true")
+    argparser.add_argument('--delete', nargs='+', help="Pass the customization id of the models to delete")
+    argparser.add_argument('--eval', help="Evaluate the trained model against an audio-file. \
+                                           \nPass in the \'customization_id\' of the model or \
+                                            pass \'latest\' to train the latest trained model. \
+                                            \nThe \'audio_file\' flag must be set as well!")
     argparser.add_argument('--audio_file', help="The path of the audio file to transcribe.")
 
     args = argparser.parse_args()
@@ -29,16 +37,11 @@ def main():
     evaluate = args.eval
     audio_file = args.audio_file
 
-    customization_id = None
-
     if name and descr and url and file_path:
         custom_stt = WatsonSTT(url=url)
-        customization_id = custom_stt.create_model(name=name, descr=descr)
+        custom_stt.create_model(name=name, descr=descr)
         custom_stt.add_corpus(file_path)
         custom_stt.training()
-
-        #print("Beginning to evaluate model...")
-        #custom_stt.transcribe('assets/sample_recording.flac')
 
     if url and verbose:
         model_status(url)
@@ -53,7 +56,7 @@ def main():
             pass
 
         print("Transcribing the audio file...")
-        results = custom_stt.transcribe('assets/sample_recording.flac', url=url, customization_id=evaluate)
+        results = custom_stt.transcribe(audio_file, url=url, customization_id=evaluate)
         print("Transcribing finished")
         print()
         print()
@@ -67,7 +70,7 @@ def model_status(url):
     api_key = config['API_KEY']['WATSON_STT_API']
 
     models = WatsonSTT.all_model_status(url=url,
-                                api_key=api_key)
+                                        api_key=api_key)
 
     pprint(models)
 
@@ -80,20 +83,33 @@ def clean_up(url, customization_ids):
         confirmation = input('Are you sure you want to delete all of the trained models? (y/N): ')
         confirmation = confirmation.strip().lower()
 
-        if confirmation == 'y' or confirmation == 'yes':
+        if confirmation in ('y', 'yes'):
             models = WatsonSTT.all_model_status(url=url, api_key=api_key)
-            models = models['customizations']
+            
+            if 'customizations' in models.keys():
+                models = models['customizations']
+                for model in tqdm(models, desc="Deleting All Models", leave=False):
+                    _id = model['customization_id']
+                    WatsonSTT.delete_model(url, api_key, _id)
+            
+            else:
+                print("No models to delete.")
+        
+        elif confirmation in ('n', 'no'):
+            print("No models were deleted. Action cancelled.")
 
-            for model in models:
-                _id = model['customization_id']
-                WatsonSTT.delete_model(url, api_key, _id)
+            return 
+
         else:
             print("Could not understand response.")
 
             return
     else:
-        for ids in customization_ids:
-            WatsonSTT.delete_model(url, api_key, customization_id=ids)
+        for ids in tqdm(customization_ids, desc="Deleting Customization Models", leave=False):
+            result = WatsonSTT.delete_model(url, api_key, customization_id=ids)
+
+            if not result:
+                return
 
 if __name__ == "__main__":
     main()
