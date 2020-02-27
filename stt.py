@@ -152,7 +152,7 @@ class WatsonSTT(object):
         return response
     
     @staticmethod
-    def delete_model(url=None, api_key=None, customization_id=None):
+    def delete_model(url=None, api_key=None, customization_id=None) -> bool:
         try:
             response = requests.delete(f'{url}/v1/customizations/{customization_id}', auth=('apikey', api_key))
 
@@ -168,27 +168,30 @@ class WatsonSTT(object):
                 print()
             
             elif response.status_code == 400:
+                print("Bad request. The specified customization ID is invalid")
                 print()
+
+                return False
+
+            elif response.status_code == 401:
                 print(response.text)
                 print()
 
-            elif response.status_code == 401:
-                print()
-                print(response.text)
-                print()
-            
+                return False
+
             elif response.status_code == 409:
-                print()
                 print(response.text)
                 print()
+
+                return False            
             
             elif response.status_code == 500:
+                print(response.text)
                 print()
-                print(response.status_code)
-                print()
+
+                return False
             
             else:
-                print()
                 print("An unexpected error occurred")
 
         except Exception as e:

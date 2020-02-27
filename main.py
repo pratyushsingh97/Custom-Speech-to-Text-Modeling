@@ -13,7 +13,7 @@ def main():
     argparser.add_argument('--name', help="Name of the model")
     argparser.add_argument('--descr', help="A short description of the custom model")
     argparser.add_argument('--url', help="This is the URL of the Watson STT model. \
-                                           Found on the start page of the Watson STT tooling.")
+                                           Found on the start page of the Watson STT tooling.", required=True)
     argparser.add_argument('--oov_file_path', help="The path of the out-of-vocabulary \
                                                     file (the corpus, words, or grammar)")
     argparser.add_argument('-v', '--verbose', '--list_models', help="Shows you all \
@@ -34,7 +34,6 @@ def main():
     file_path = args.oov_file_path
     verbose = args.verbose
     delete = args.delete
-    print(delete)
     evaluate = args.eval
     audio_file = args.audio_file
 
@@ -57,7 +56,7 @@ def main():
             pass
 
         print("Transcribing the audio file...")
-        results = custom_stt.transcribe('assets/sample_recording.flac', url=url, customization_id=evaluate)
+        results = custom_stt.transcribe(audio_file, url=url, customization_id=evaluate)
         print("Transcribing finished")
         print()
         print()
@@ -106,9 +105,11 @@ def clean_up(url, customization_ids):
 
             return
     else:
-        print(len(customization_ids))
-        for ids in customization_ids:
-            WatsonSTT.delete_model(url, api_key, customization_id=ids)
+        for ids in tqdm(customization_ids, desc="Deleting Customization Models", leave=False):
+            result = WatsonSTT.delete_model(url, api_key, customization_id=ids)
+
+            if not result:
+                return
 
 if __name__ == "__main__":
     main()
