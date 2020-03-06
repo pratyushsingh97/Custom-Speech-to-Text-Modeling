@@ -4,7 +4,7 @@ from pprint import pprint
 
 from tqdm import tqdm
 
-from stt import WatsonSTT
+from cli.stt import WatsonSTT
 
 def main():
     # setting up the command line
@@ -44,11 +44,14 @@ def main():
         custom_stt.training()
 
     if url and file_path:
+        print("Adding corpus...")
         # @TODO: training a model with an existing uploaded corpus
         custom_stt = WatsonSTT(url=url)
         custom_stt.add_corpus(file_path)
+        print("Finished adding corpus")
 
-    if url and verbose:
+    if verbose:
+        print("Retrieving Models...")
         model_status(url)
     
     if url and delete:
@@ -84,7 +87,7 @@ def clean_up(url, customization_ids):
     config.read('keys/conf.ini')
     api_key = config['API_KEY']['WATSON_STT_API']
 
-    if customization_ids == 'all':
+    if customization_ids[0] == 'all':
         confirmation = input('Are you sure you want to delete all of the trained models? (y/N): ')
         confirmation = confirmation.strip().lower()
 

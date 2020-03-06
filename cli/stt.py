@@ -52,10 +52,10 @@ class WatsonSTT(object):
         if self.customization_id is None:
             raise ValueError("No customization id provided!")
 
-        if self.model_status() == 'pending':
-            print("Add a corpus, by calling the add_corpus() function!")
+        # if self.model_status() == 'pending':
+        #     print("Add a corpus, by calling the add_corpus() function!")
             
-            return
+        #     return
 
         if self.customization_id:
             # check status
