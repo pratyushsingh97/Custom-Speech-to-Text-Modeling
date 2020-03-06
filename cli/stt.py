@@ -17,7 +17,7 @@ class WatsonSTT(object):
         self.customization_id = customization_id
         self.status = None
 
-    def create_model(self, name, descr, model="en-US_BroadbandModel") -> str:
+    def create_model(self, name: str, descr:str, model="en-US_BroadbandModel") -> str:
         headers = {'Content-Type': 'application/json',}
         data = {"name": name,
                 "base_model_name": model,
