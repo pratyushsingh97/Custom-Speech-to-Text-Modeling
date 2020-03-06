@@ -32,12 +32,12 @@ class WatsonSTT(object):
         if response.status_code == 201:
             response = json.loads(response.text)
 
-            self.customization_id = response['id']
+            self.customization_id = response['customization_id']
             self.status = 'pending' # this is the initial status of the model
 
             print("Model created with id: ", self.customization_id)
 
-            return response['id']
+            return response['customization_id']
         
         if response.status_code == 400:
             raise ValueError(response.text)
@@ -52,10 +52,10 @@ class WatsonSTT(object):
         if self.customization_id is None:
             raise ValueError("No customization id provided!")
 
-        if self.model_status() == 'pending':
-            print("Add a corpus, by calling the add_corpus() function!")
+        # if self.model_status() == 'pending':
+        #     print("Add a corpus, by calling the add_corpus() function!")
             
-            return
+        #     return
 
         if self.customization_id:
             # check status
