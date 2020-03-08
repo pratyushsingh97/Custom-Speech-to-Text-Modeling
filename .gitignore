@@ -1,8 +1,8 @@
 __pycache__/
 assets/
-keys/
 misc/
 .DS_Store
 .pytest_cache/
+keys/
 
 
