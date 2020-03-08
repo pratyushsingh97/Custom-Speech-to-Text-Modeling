@@ -3,5 +3,6 @@ assets/
 keys/
 misc/
 .DS_Store
+.pytest_cache/
 
 

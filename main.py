@@ -1,6 +1,10 @@
 import argparse
 from configparser import ConfigParser
 from pprint import pprint
+from pathlib import Path
+from dateutil.parser import parse as date_parse
+from datetime import datetime
+from operator import itemgetter
 
 from tqdm import tqdm
 
@@ -43,7 +47,7 @@ def main():
         custom_stt.add_corpus(file_path)
         custom_stt.training()
 
-    if url and file_path:
+    if url and file_path and name is None is file_path is None:
         print("Adding corpus...")
         # @TODO: training a model with an existing uploaded corpus
         custom_stt = WatsonSTT(url=url)
@@ -54,25 +58,43 @@ def main():
         print("Retrieving Models...")
         model_status(url)
     
-    if url and delete:
-        clean_up(url, delete)
-    
     if url and evaluate and audio_file:
-        custom_stt = WatsonSTT(url=url)
-        # @TODO: build this out
-        if evaluate == 'latest':
-            pass
+        # pass in customization id 
+        print("Checking audio file...")
+        path = Path(audio_file)
+        if not path.exists() and not path.is_file():
+            raise FileExistsError("Cannot find audio file")
+
+        if evaluate == "latest":
+            models = model_status(url, print=0)
+            models = models['customizations']
+
+            # convert the date string into date object
+            for model in models:
+                model['created'] = _to_date(model['created'])
+
+            models = sorted(models, key=itemgetter('created'), reverse=True)
+            evaluate = models[0]['customization_id']
 
         print("Transcribing the audio file...")
-        results = custom_stt.transcribe(audio_file, url=url, customization_id=evaluate)
+        custom_stt = WatsonSTT(url=url, customization_id=evaluate)
+        results = custom_stt.transcribe(audio_file)
         print("Transcribing finished")
         print()
-        print()
         pprint(results)
+
+    if url and delete:
+        clean_up(url, delete)
         
 
+def _to_date(date:str) -> datetime:
+    try:
+        return date_parse(date)
+    except:
+        raise ValueError(f"Error parsing \'{date}\'")
 
-def model_status(url):
+
+def model_status(url, print=1) -> None:
     config = ConfigParser()
     config.read('keys/conf.ini')
     api_key = config['API_KEY']['WATSON_STT_API']
@@ -80,7 +102,12 @@ def model_status(url):
     models = WatsonSTT.all_model_status(url=url,
                                         api_key=api_key)
 
-    pprint(models)
+    # flag is set by default to print the results to stdout
+    if print:
+        pprint(models)
+
+    return models
+
 
 def clean_up(url, customization_ids):
     config = ConfigParser()
@@ -90,28 +117,23 @@ def clean_up(url, customization_ids):
     if customization_ids[0] == 'all':
         confirmation = input('Are you sure you want to delete all of the trained models? (y/N): ')
         confirmation = confirmation.strip().lower()
-
         if confirmation in ('y', 'yes'):
             models = WatsonSTT.all_model_status(url=url, api_key=api_key)
-            
             if 'customizations' in models.keys():
                 models = models['customizations']
                 for model in tqdm(models, desc="Deleting All Models", leave=False):
                     _id = model['customization_id']
                     WatsonSTT.delete_model(url, api_key, _id)
-            
             else:
                 print("No models to delete.")
         
         elif confirmation in ('n', 'no'):
             print("No models were deleted. Action cancelled.")
-
-            return 
-
         else:
             print("Could not understand response.")
 
-            return
+        return 
+
     else:
         for ids in tqdm(customization_ids, desc="Deleting Customization Models", leave=False):
             result = WatsonSTT.delete_model(url, api_key, customization_id=ids)

@@ -1,11 +1,13 @@
 from configparser import ConfigParser
 from pathlib import Path
 from string import Template
+from time import sleep
 
 import requests
 import json
 
 import polling
+from progress.spinner import PixelSpinner
 
 class WatsonSTT(object):
     def __init__(self, url, customization_id=None):
@@ -13,11 +15,22 @@ class WatsonSTT(object):
         config.read('keys/conf.ini')
 
         self.API_KEY = config['API_KEY']['WATSON_STT_API']
+
+        self.name = ""
+        self.descr = ""
+        self.model_type = ""
+
         self.url = url
         self.customization_id = customization_id
         self.status = None
 
     def create_model(self, name: str, descr:str, model="en-US_BroadbandModel") -> str:
+        if type(name) != str:
+            raise TypeError("The \'name\' of the model must be a \'str\'")
+        
+        if type(name) != str:
+            raise TypeError("The \'descr\' of the model must be a \'str\'")
+
         headers = {'Content-Type': 'application/json',}
         data = {"name": name,
                 "base_model_name": model,
@@ -28,6 +41,10 @@ class WatsonSTT(object):
                                  headers=headers, 
                                  data=data, 
                                  auth=('apikey', self.API_KEY))
+        
+        self.name = name
+        self.descr = descr
+        self.model_type = model
         
         if response.status_code == 201:
             response = json.loads(response.text)
@@ -52,16 +69,12 @@ class WatsonSTT(object):
         if self.customization_id is None:
             raise ValueError("No customization id provided!")
 
-        # if self.model_status() == 'pending':
-        #     print("Add a corpus, by calling the add_corpus() function!")
-            
-        #     return
-
         if self.customization_id:
             # check status
-            polling.poll(lambda: self.model_status() == 'ready',
-                         step=0.1,
-                         poll_forever=True)
+            with PixelSpinner("Allocating resources to begin training ") as bar:
+                while self.model_status() != 'ready':
+                    sleep(0.1)
+                    bar.next()
 
         print("Training Beginning")
 
@@ -69,11 +82,10 @@ class WatsonSTT(object):
                                  auth=('apikey', self.API_KEY))
         
         
-        print("Training...")
-
-        polling.poll(lambda: self.model_status() == 'available',
-                     step=0.1,
-                     poll_forever=True)
+        with PixelSpinner(f"Training {self.name} ") as bar:
+            while self.model_status() != 'available':
+                sleep(0.1)
+                bar.next()
         
         print("Training has finished")
         response = json.loads(response.text)
@@ -101,6 +113,7 @@ class WatsonSTT(object):
     def model_status(self):
         response = requests.get(f'{self.url}/v1/customizations/{self.customization_id}', 
                                 auth=('apikey', self.API_KEY))
+        
 
         if self.customization_id is None:
             raise ValueError("Create a custom model first by calling the create_model method.")
@@ -113,7 +126,7 @@ class WatsonSTT(object):
         else:
             raise Exception(response.text)
     
-    def transcribe(self, path_to_audio_file, customization_id=None, url=None):
+    def transcribe(self, path_to_audio_file):
         audio_file = None
         path_to_audio_file = Path(path_to_audio_file)
 
@@ -123,16 +136,9 @@ class WatsonSTT(object):
         with open(path_to_audio_file, 'rb') as f:
             audio_file = f.read()
         
-        # handling the customization id
-        if customization_id is None:
-            customization_id = self.customization_id
-        
-        if url is None:
-            url = self.url
-
         # @TODO: check to see if this is a valid audio type
         content_type = path_to_audio_file.suffix.replace('.', '') # parse the audio file type from the stem
-        sync_url = f"{url}/v1/recognize?language_customization_id={customization_id}"
+        sync_url = f"{self.url}/v1/recognize?language_customization_id={self.customization_id}"
         headers = {'Content-Type': f'audio/{content_type}'}
         response = requests.post(url=sync_url, 
                                  data=audio_file, 
@@ -158,11 +164,11 @@ class WatsonSTT(object):
 
             if response.status_code == 200:
                 print()
-                print(f"Deleting model with id: {customization_id}")
 
-                polling.poll(lambda: WatsonSTT.model_deletion_checker(url, api_key, customization_id),
-                            step=0.01,
-                            poll_forever=True)
+                with PixelSpinner(f"Deleting model with id: {customization_id} ") as bar:
+                    while not WatsonSTT.model_deletion_checker(url, api_key, customization_id):
+                        sleep(0.01)
+                        bar.update()
                 
                 print(f"Model {customization_id} Succesfully Deleted")
                 print()
