@@ -18,6 +18,12 @@ class WatsonSTT(object):
         self.status = None
 
     def create_model(self, name: str, descr:str, model="en-US_BroadbandModel") -> str:
+        if type(name) != str:
+            raise TypeError("The \'name\' of the model must be a \'str\'")
+        
+        if type(name) != str:
+            raise TypeError("The \'descr\' of the model must be a \'str\'")
+
         headers = {'Content-Type': 'application/json',}
         data = {"name": name,
                 "base_model_name": model,
@@ -51,11 +57,6 @@ class WatsonSTT(object):
     def training(self):
         if self.customization_id is None:
             raise ValueError("No customization id provided!")
-
-        # if self.model_status() == 'pending':
-        #     print("Add a corpus, by calling the add_corpus() function!")
-            
-        #     return
 
         if self.customization_id:
             # check status
@@ -101,6 +102,7 @@ class WatsonSTT(object):
     def model_status(self):
         response = requests.get(f'{self.url}/v1/customizations/{self.customization_id}', 
                                 auth=('apikey', self.API_KEY))
+        
 
         if self.customization_id is None:
             raise ValueError("Create a custom model first by calling the create_model method.")
@@ -113,7 +115,7 @@ class WatsonSTT(object):
         else:
             raise Exception(response.text)
     
-    def transcribe(self, path_to_audio_file, customization_id=None, url=None):
+    def transcribe(self, path_to_audio_file):
         audio_file = None
         path_to_audio_file = Path(path_to_audio_file)
 
@@ -123,16 +125,9 @@ class WatsonSTT(object):
         with open(path_to_audio_file, 'rb') as f:
             audio_file = f.read()
         
-        # handling the customization id
-        if customization_id is None:
-            customization_id = self.customization_id
-        
-        if url is None:
-            url = self.url
-
         # @TODO: check to see if this is a valid audio type
         content_type = path_to_audio_file.suffix.replace('.', '') # parse the audio file type from the stem
-        sync_url = f"{url}/v1/recognize?language_customization_id={customization_id}"
+        sync_url = f"{self.url}/v1/recognize?language_customization_id={self.customization_id}"
         headers = {'Content-Type': f'audio/{content_type}'}
         response = requests.post(url=sync_url, 
                                  data=audio_file, 
