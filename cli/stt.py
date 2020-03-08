@@ -1,11 +1,13 @@
 from configparser import ConfigParser
 from pathlib import Path
 from string import Template
+from time import sleep
 
 import requests
 import json
 
 import polling
+from progress.spinner import PixelSpinner
 
 class WatsonSTT(object):
     def __init__(self, url, customization_id=None):
@@ -13,6 +15,11 @@ class WatsonSTT(object):
         config.read('keys/conf.ini')
 
         self.API_KEY = config['API_KEY']['WATSON_STT_API']
+
+        self.name = ""
+        self.descr = ""
+        self.model_type = ""
+
         self.url = url
         self.customization_id = customization_id
         self.status = None
@@ -34,6 +41,10 @@ class WatsonSTT(object):
                                  headers=headers, 
                                  data=data, 
                                  auth=('apikey', self.API_KEY))
+        
+        self.name = name
+        self.descr = descr
+        self.model_type = model
         
         if response.status_code == 201:
             response = json.loads(response.text)
@@ -60,9 +71,10 @@ class WatsonSTT(object):
 
         if self.customization_id:
             # check status
-            polling.poll(lambda: self.model_status() == 'ready',
-                         step=0.1,
-                         poll_forever=True)
+            with PixelSpinner("Allocating resources to begin training ") as bar:
+                while self.model_status() != 'ready':
+                    sleep(0.1)
+                    bar.next()
 
         print("Training Beginning")
 
@@ -70,11 +82,10 @@ class WatsonSTT(object):
                                  auth=('apikey', self.API_KEY))
         
         
-        print("Training...")
-
-        polling.poll(lambda: self.model_status() == 'available',
-                     step=0.1,
-                     poll_forever=True)
+        with PixelSpinner(f"Training {self.name} ") as bar:
+            while self.model_status() != 'available':
+                sleep(0.1)
+                bar.next()
         
         print("Training has finished")
         response = json.loads(response.text)
@@ -153,11 +164,11 @@ class WatsonSTT(object):
 
             if response.status_code == 200:
                 print()
-                print(f"Deleting model with id: {customization_id}")
 
-                polling.poll(lambda: WatsonSTT.model_deletion_checker(url, api_key, customization_id),
-                            step=0.01,
-                            poll_forever=True)
+                with PixelSpinner(f"Deleting model with id: {customization_id} ") as bar:
+                    while not WatsonSTT.model_deletion_checker(url, api_key, customization_id):
+                        sleep(0.01)
+                        bar.update()
                 
                 print(f"Model {customization_id} Succesfully Deleted")
                 print()
