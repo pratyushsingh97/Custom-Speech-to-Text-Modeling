@@ -7,7 +7,7 @@ from PyInquirer import prompt, print_json
 from examples import custom_style_2
 from tqdm import tqdm
 
-from stt import WatsonSTT
+from cli.stt import WatsonSTT
 
 class VisualSTT(object):
     def __init__(self):
@@ -201,7 +201,10 @@ class VisualSTT(object):
                 models_id, models_delete = self._delete_specific_models()
                 selected_models = prompt(models_delete, style=custom_style_2)
 
-                pprint(selected_models)
+                # delete the models 
+                models_id = list(models_id.values())
+                VisualSTT.clean_up(self.url, models_id)
+                
 
     @staticmethod
     def clean_up(url, customization_ids):
