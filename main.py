@@ -9,6 +9,10 @@ from operator import itemgetter
 from tqdm import tqdm
 
 from cli.stt import WatsonSTT
+from visual import VisualSTT
+
+# @TODO: Add the ability to read the url from the conf.ini. Already implemented in visual.py
+# @TODO: Add a visual flag to kickstart the process in visual mode. Should be the first thing the program checks for 
 
 def main():
     # setting up the command line
@@ -68,6 +72,10 @@ def main():
         if evaluate == "latest":
             models = model_status(url, print=0)
             models = models['customizations']
+
+            if len(models) == 0:
+                print("You do not have any trained models. Please create and train a model before evaluating.")
+                return 
 
             # convert the date string into date object
             for model in models:
