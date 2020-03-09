@@ -9,7 +9,7 @@ from operator import itemgetter
 from tqdm import tqdm
 
 from cli.stt import WatsonSTT
-from visual import VisualSTT
+from cli.visual import VisualSTT
 
 # @TODO: Add the ability to read the url from the conf.ini. Already implemented in visual.py
 # @TODO: Add a visual flag to kickstart the process in visual mode. Should be the first thing the program checks for 
