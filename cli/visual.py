@@ -2,6 +2,7 @@ from __future__ import print_function, unicode_literals
 from pprint import pprint
 from configparser import ConfigParser
 from pathlib import Path
+from operator import itemgetter
 
 from PyInquirer import prompt, print_json
 from examples import custom_style_2
@@ -78,6 +79,25 @@ class VisualSTT(object):
 
         return train
     
+    def evaluate_questions(self):
+        models_to_id, evaluate_models = self._model_keys()
+
+        evaluate = [{
+            "type": 'input',
+            "message": "Provide a file path for the audio file",
+            "name": "audio_file"
+        },
+        {
+            "type": "checkbox",
+            "qmark": '📝',
+            "message": 'Select one or more models to evaluate',
+            "name": "models_evaluate",
+            "choices": evaluate_models
+        }
+        ]
+
+        return models_to_id, evaluate
+    
 
     def _save_url(self, url=None) -> None:
         config = ConfigParser()
@@ -95,6 +115,21 @@ class VisualSTT(object):
         with open(path, 'a') as configfile:
             config.write(configfile)
     
+    def _model_keys(self):
+        all_models = WatsonSTT.all_model_status(url=self.url, api_key=self.api_key)
+        all_models = all_models['customizations']
+        all_models = sorted(all_models, key=itemgetter('created'), reverse=True) # sort models by date
+        
+        model_name = []
+        models_to_id = {}
+
+        for model in all_models:
+            key = f"{model['name']} -- {model['description']} -- Created at: {model['created']}"
+            model_name.append({"name": key})
+            models_to_id[key] = model['customization_id']
+        
+        return models_to_id, model_name
+    
     def delete(self) -> list:
         delete = [{
             "type": "input",
@@ -105,15 +140,17 @@ class VisualSTT(object):
         return delete
     
     def _delete_specific_models(self) -> tuple:
-        all_models = WatsonSTT.all_model_status(url=self.url, api_key=self.api_key)
-        all_models = all_models['customizations']
-        lst_models_delete = []
-        models_to_id = {}
+        # all_models = WatsonSTT.all_model_status(url=self.url, api_key=self.api_key)
+        # all_models = all_models['customizations']
+        # lst_models_delete = []
+        # models_to_id = {}
 
-        for model in all_models:
-            key = f"{model['name']}. Created at: {model['created']}"
-            lst_models_delete.append({"name": key})
-            models_to_id[key] = model['customization_id']
+        # for model in all_models:
+        #     key = f"{model['name']} -- {model['description']} -- Created at: {model['created']}"
+        #     lst_models_delete.append({"name": key})
+        #     models_to_id[key] = model['customization_id']
+
+        model_to_id, models_to_delete = self._model_keys() 
 
         # implement hash function to store the "name" as the key and the customization id as the value
         model_choices = [{
@@ -121,91 +158,117 @@ class VisualSTT(object):
             'qmark': '❌',
             'message': 'Choose one or more models to delete',
             'name': 'models_to_delete',
-            'choices': lst_models_delete
+            'choices': models_to_delete
         }]
 
         return models_to_id, model_choices
     
     def runner(self):
-        account_details = prompt(self.account_details(), style=custom_style_2)
-        
-        if account_details['watson_stt_url'] is "None":
-            print("Attempting to read in url from configuration file")
-            try:
-                path = Path('./keys/conf.ini').resolve()
-                config = ConfigParser()
-                config.read(path)
-                self.url = config['URL']['WATSON_STT_URL']
-
-                print("Succesfully read URL.")
+        try:
+            account_details = prompt(self.account_details(), style=custom_style_2)
             
-            except:
-                print("Uh oh! We failed to read the URL from the configuration file.")
-                raise ValueError("Failure to read URL from conf.ini file")
-        
-        else:
-            url = account_details['watson_stt_url']
-            self.url = url
-            self._save_url(self.url)
+            if account_details['watson_stt_url'] is "None":
+                print()
+                print("Attempting to read in url from configuration file")
+                try:
+                    path = Path('./keys/conf.ini').resolve()
+                    config = ConfigParser()
+                    config.read(path)
+                    self.url = config['URL']['WATSON_STT_URL']
 
-        if account_details['watson_stt_api_key'] is "None":
-            print("Attempting to read in api key from configuration file")
-            try:
-                path = Path('./keys/conf.ini').resolve()
-                config = ConfigParser()
-                config.read(path)
-                self.api_key = config['API_KEY']['WATSON_STT_API']
-
-                print("Succesfully read in API key.")
+                    print("Succesfully read URL.")
+                    print()
+                
+                except:
+                    print("Uh oh! We failed to read the URL from the configuration file.")
+                    raise ValueError("Failure to read URL from conf.ini file")
             
-            except:
-                print("Uh oh! We failed to read the API Key from the configuration file.")
-                raise ValueError("Failure to read API key from conf.ini file")
+            else:
+                url = account_details['watson_stt_url']
+                self.url = url
+                self._save_url(self.url)
 
-        else:
-            api_key = account_details['watson_stt_api_key']
-            self.api_key = api_key
-            self._save_api_key(api_key)
+            if account_details['watson_stt_api_key'] is "None":
+                print("Attempting to read in api key from configuration file")
+                try:
+                    path = Path('./keys/conf.ini').resolve()
+                    config = ConfigParser()
+                    config.read(path)
+                    self.api_key = config['API_KEY']['WATSON_STT_API']
 
-        answers = prompt(self.main_questions(), style=custom_style_2)
-        model_options  = answers['custom_models_options']
+                    print("Succesfully read in API key.")
+                    print()
+                
+                except:
+                    print("Uh oh! We failed to read the API Key from the configuration file.")
+                    raise ValueError("Failure to read API key from conf.ini file")
 
-        if 'Train' in model_options:
-            # ask train questions
-            train = prompt(self.train_questions(), style=custom_style_2)
+            else:
+                api_key = account_details['watson_stt_api_key']
+                self.api_key = api_key
+                self._save_api_key(api_key)
 
-            model_name = train['model_name']
-            model_descr = train['model_description']
-            oov_file_path = train['oov_file_path']
+            answers = prompt(self.main_questions(), style=custom_style_2)
+            model_options  = answers['custom_models_options']
 
-            stt = WatsonSTT(url=self.url)
-            stt.create_model(name=model_name, descr=model_descr)
-            stt.add_corpus(oov_file_path)
-            stt.training()
+            if 'Train' in model_options:
+                # ask train questions
+                train = prompt(self.train_questions(), style=custom_style_2)
 
-        if 'Evaluate' in model_options:
-            # ask evaulate model_options
-            pass
-        
-        if 'See Available Models' in model_options:
-            # see availble model_options control flow.
-            pass
+                model_name = train['model_name']
+                model_descr = train['model_description']
+                oov_file_path = train['oov_file_path']
 
-        if 'Delete' in model_options:
-            delete_options = prompt(self.delete(), style=custom_style_2) 
-            delete_options = delete_options['delete_all'].strip().lower()
+                stt = WatsonSTT(url=self.url)
+                stt.create_model(name=model_name, descr=model_descr)
+                stt.add_corpus(oov_file_path)
+                stt.training()
+
+            if 'Evaluate' in model_options:
+                model_id, evaluate_answers = self.evaluate_questions()
+                evaluate_models = prompt(evaluate_answers, style=custom_style_2)
+                
+                path_to_audio_file = evaluate_models['audio_file']
+                evaluate_models = evaluate_models['models_evaluate']
+
+                custom_ids = [model_id[eval_model] for eval_model in evaluate_models]
+
+                for index, id in enumerate(custom_ids):
+                    stt = WatsonSTT(url=self.url, customization_id=id)
+                    results = stt.transcribe(path_to_audio_file)
+
+                    print()
+                    print("*" * 60)
+                    print(f"Transcription Results from {evaluate_models[index]}:")
+                    pprint(results)
+                    print()
+                    print("*" * 60)
+                    print()
+
             
-            if delete_options in ('y', 'yes'):
-                VisualSTT.clean_up(url=self.url, customization_ids=['all'])
-            elif delete_options in ('n', 'no'):
-                models_id, models_delete = self._delete_specific_models()
-                selected_models = prompt(models_delete, style=custom_style_2)
+            if 'See Available Models' in model_options:
+                models = WatsonSTT.all_model_status(url=self.url, api_key=self.api_key)
+                pprint(models)
 
-                # delete the models 
-                models_id = list(models_id.values())
-                VisualSTT.clean_up(self.url, models_id)
+            if 'Delete' in model_options:
+                delete_options = prompt(self.delete(), style=custom_style_2) 
+                delete_options = delete_options['delete_all'].strip().lower()
+                
+                if delete_options in ('y', 'yes'):
+                    VisualSTT.clean_up(url=self.url, customization_ids=['all'])
+                elif delete_options in ('n', 'no'):
+                    models_id, models_delete = self._delete_specific_models()
+                    selected_models = prompt(models_delete, style=custom_style_2)
+                    custom_ids_del_models = [models[selected_model] for selected_model in selected_models]
+
+                    # delete the models 
+                    VisualSTT.clean_up(self.url, custom_ids_del_models)
+        
+        except KeyboardInterrupt:
+            print("Action Cancelled")
                 
 
+    # @TODO: find a better place to put this function
     @staticmethod
     def clean_up(url, customization_ids):
         config = ConfigParser()

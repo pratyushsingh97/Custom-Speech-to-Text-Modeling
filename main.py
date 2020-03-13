@@ -12,16 +12,17 @@ from cli.stt import WatsonSTT
 from cli.visual import VisualSTT
 
 # @TODO: Add the ability to read the url from the conf.ini. Already implemented in visual.py
-# @TODO: Add a visual flag to kickstart the process in visual mode. Should be the first thing the program checks for 
+# @TODO: Check to see if the url flag is passed seperately. Cannot set 'required=true' because it conflicts with the visual flag
 
 def main():
     # setting up the command line
     argparser = argparse.ArgumentParser()
 
+    argparser.add_argument('--visual', help="Run CLI in visual mode. All other flags passed are ignored", action="store_true")
     argparser.add_argument('--name', help="Name of the model")
     argparser.add_argument('--descr', help="A short description of the custom model")
     argparser.add_argument('--url', help="This is the URL of the Watson STT model. \
-                                           Found on the start page of the Watson STT tooling.", required=True)
+                                           Found on the start page of the Watson STT tooling.")
     argparser.add_argument('--oov_file_path', help="The path of the out-of-vocabulary \
                                                     file (the corpus, words, or grammar)")
     argparser.add_argument('-v', '--verbose', '--list_models', help="Shows you all \
@@ -36,6 +37,7 @@ def main():
 
     args = argparser.parse_args()
 
+    visual = args.visual
     name = args.name
     descr = args.descr
     url = args.url
@@ -44,6 +46,13 @@ def main():
     delete = args.delete
     evaluate = args.eval
     audio_file = args.audio_file
+
+    if visual:
+        VisualSTT().runner()
+    
+    else:
+        if url is None:
+            raise Exception("Must pass URL")
 
     if name and descr and url and file_path:
         custom_stt = WatsonSTT(url=url)
