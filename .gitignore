@@ -3,6 +3,6 @@ assets/
 misc/
 .DS_Store
 .pytest_cache/
-keys/
+keys/conf.ini
 
 

@@ -77,7 +77,6 @@ class WatsonSTT(object):
                     bar.next()
 
         print("Training Beginning")
-
         response = requests.post(f'{self.url}/v1/customizations/{self.customization_id}/train', 
                                  auth=('apikey', self.API_KEY))
         
@@ -105,7 +104,6 @@ class WatsonSTT(object):
 
         url = f'{self.url}/v1/customizations/{self.customization_id}/corpora/{corpus_name}'
         response = requests.post(url, data=data, auth=('apikey', self.API_KEY))
-        
 
         if response.status_code == 201:
             print("Corpus Successfully Added")
@@ -144,10 +142,17 @@ class WatsonSTT(object):
                                  data=audio_file, 
                                  headers=headers, 
                                  auth=('apikey', self.API_KEY))
+        
 
-        response = json.loads(response.text)
+        if response.status_code == 200:
+            response = json.loads(response.text)
+            
+            return response
 
-        return response
+        else:
+            raise Exception(response.text)
+
+        
 
     @staticmethod
     def all_model_status(url=None, api_key=None):
@@ -172,37 +177,33 @@ class WatsonSTT(object):
                 
                 print(f"Model {customization_id} Succesfully Deleted")
                 print()
+
+                return True
             
             elif response.status_code == 400:
                 print("Bad request. The specified customization ID is invalid")
                 print()
 
-                return False
-
             elif response.status_code == 401:
                 print(response.text)
                 print()
 
-                return False
-
             elif response.status_code == 409:
                 print(response.text)
-                print()
-
-                return False            
+                print()        
             
             elif response.status_code == 500:
                 print(response.text)
                 print()
-
-                return False
             
             else:
                 print("An unexpected error occurred")
+            
+
+            return False
 
         except Exception as e:
                 print(e)
-    
     
     @staticmethod
     def model_deletion_checker(url, api_key, customization_id):

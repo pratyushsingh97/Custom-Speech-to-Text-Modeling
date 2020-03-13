@@ -9,15 +9,20 @@ from operator import itemgetter
 from tqdm import tqdm
 
 from cli.stt import WatsonSTT
+from cli.visual import VisualSTT
+
+# @TODO: Add the ability to read the url from the conf.ini. Already implemented in visual.py
+# @TODO: Check to see if the url flag is passed seperately. Cannot set 'required=true' because it conflicts with the visual flag
 
 def main():
     # setting up the command line
     argparser = argparse.ArgumentParser()
 
+    argparser.add_argument('--visual', help="Run CLI in visual mode. All other flags passed are ignored", action="store_true")
     argparser.add_argument('--name', help="Name of the model")
     argparser.add_argument('--descr', help="A short description of the custom model")
     argparser.add_argument('--url', help="This is the URL of the Watson STT model. \
-                                           Found on the start page of the Watson STT tooling.", required=True)
+                                           Found on the start page of the Watson STT tooling.")
     argparser.add_argument('--oov_file_path', help="The path of the out-of-vocabulary \
                                                     file (the corpus, words, or grammar)")
     argparser.add_argument('-v', '--verbose', '--list_models', help="Shows you all \
@@ -32,6 +37,7 @@ def main():
 
     args = argparser.parse_args()
 
+    visual = args.visual
     name = args.name
     descr = args.descr
     url = args.url
@@ -40,6 +46,13 @@ def main():
     delete = args.delete
     evaluate = args.eval
     audio_file = args.audio_file
+
+    if visual:
+        VisualSTT().runner()
+    
+    else:
+        if url is None:
+            raise Exception("Must pass URL")
 
     if name and descr and url and file_path:
         custom_stt = WatsonSTT(url=url)
@@ -68,6 +81,10 @@ def main():
         if evaluate == "latest":
             models = model_status(url, print=0)
             models = models['customizations']
+
+            if len(models) == 0:
+                print("You do not have any trained models. Please create and train a model before evaluating.")
+                return 
 
             # convert the date string into date object
             for model in models:
