@@ -142,10 +142,17 @@ class WatsonSTT(object):
                                  data=audio_file, 
                                  headers=headers, 
                                  auth=('apikey', self.API_KEY))
+        
 
-        response = json.loads(response.text)
+        if response.status_code == 200:
+            response = json.loads(response.text)
+            
+            return response
 
-        return response
+        else:
+            raise Exception(response.text)
+
+        
 
     @staticmethod
     def all_model_status(url=None, api_key=None):
