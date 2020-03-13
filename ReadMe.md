@@ -13,7 +13,7 @@ Property: ReadME, Watson STT CLI
 
     python3 main.py --visual
 
-![ReadMe%20for%20Open%20Source/Untitled.png](ReadMe%20for%20Open%20Source/Untitled.png)
+![ReadMe%20for%20Open%20Source/main_menu.png](ReadMe%20for%20Open%20Source/main_menu.png)
 
 The CLI prompts by asking you the URL and API key of your Speech-to-Text model. This information is found by clicking on your instance under *Service* tab after logging into [your cloud account](http://cloud.ibm.com). 
 
@@ -23,7 +23,7 @@ When using the visual mode, it saves the URL and API key, so for subsequent runs
 
 ## Direct Mode
 
-![ReadMe%20for%20Open%20Source/Untitled%201.png](ReadMe%20for%20Open%20Source/Untitled%201.png)
+![ReadMe%20for%20Open%20Source/direct.png](ReadMe%20for%20Open%20Source/direct.png)
 
 To interact directly with the CLI, **don't** pass the *—visual*  flag. When interacting directly, you must pass the *—url* flag.
 
