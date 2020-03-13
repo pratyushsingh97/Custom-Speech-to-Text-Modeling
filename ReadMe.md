@@ -45,7 +45,7 @@ To interact directly with the CLI, **don't** pass the *—visual*  flag. When in
 
 1. [python 3.*](https://realpython.com/installing-python/)
 2. [pip](https://pip.pypa.io/en/stable/installing/) 
-3. git 
+3. [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) 
 4. [virtualenv](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/)
 
 ### Installation
