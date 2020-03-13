@@ -98,21 +98,24 @@ class VisualSTT(object):
 
         return models_to_id, evaluate
     
-
     def _save_url(self, url=None) -> None:
-        config = ConfigParser()
-        config['URL'] = {"WATSON_STT_URL": url}
         path = Path('./keys/conf.ini').resolve()
 
-        with open(path, 'a') as configfile:
+        config = ConfigParser()
+        config.read(path)
+        config['URL'] = {"WATSON_STT_URL": url}
+
+        with open(path, 'w') as configfile:
             config.write(configfile)
     
     def _save_api_key(self, api_key=None) -> None:
-        config = ConfigParser()
-        config['API_KEY'] = {"WATSON_STT_API": api_key}
         path = Path('./keys/conf.ini').resolve()
 
-        with open(path, 'a') as configfile:
+        config = ConfigParser()
+        config.read(path)
+        config['API_KEY'] = {"WATSON_STT_API": api_key}
+        
+        with open(path, 'w') as configfile:
             config.write(configfile)
     
     def _model_keys(self):
