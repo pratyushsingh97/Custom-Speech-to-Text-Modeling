@@ -259,7 +259,9 @@ class VisualSTT(object):
                 elif delete_options in ('n', 'no'):
                     models_id, models_delete = self._delete_specific_models()
                     selected_models = prompt(models_delete, style=custom_style_2)
-                    custom_ids_del_models = [models[selected_model] for selected_model in selected_models]
+                    
+                    models_to_delete = selected_models['models_to_delete']
+                    custom_ids_del_models = [models_id[del_model] for del_model in models_to_delete]
 
                     # delete the models 
                     VisualSTT.clean_up(self.url, custom_ids_del_models)
