@@ -1,3 +1,5 @@
+![PyPI pyversions](https://img.shields.io/badge/python-3.5%20%7C%203.6%20%7C%203.7-blue)
+
 ## Watson Speech-to-Text CLI
 
 *Watson Assistant CLI* is a wrapper around the *[IBM Watson Speech-to-Text API](https://cloud.ibm.com/apidocs/speech-to-text/speech-to-text#create-a-custom-language-model)* that allows you to add custom vocabulary, grammar, and corpus as well train, test, and delete your models. The CLI allows you to perform these steps through a visual, interactive interface or directly through the command line. 
