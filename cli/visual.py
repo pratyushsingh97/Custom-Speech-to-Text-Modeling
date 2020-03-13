@@ -150,7 +150,7 @@ class VisualSTT(object):
         #     lst_models_delete.append({"name": key})
         #     models_to_id[key] = model['customization_id']
 
-        model_to_id, models_to_delete = self._model_keys() 
+        models_to_id, models_to_delete = self._model_keys() 
 
         # implement hash function to store the "name" as the key and the customization id as the value
         model_choices = [{
