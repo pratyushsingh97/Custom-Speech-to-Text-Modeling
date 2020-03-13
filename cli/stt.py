@@ -157,7 +157,6 @@ class WatsonSTT(object):
     @staticmethod
     def all_model_status(url=None, api_key=None):
         response = requests.get(f'{url}/v1/customizations', auth=('apikey', api_key))
-
         response = json.loads(response.text)
 
         return response
@@ -166,7 +165,6 @@ class WatsonSTT(object):
     def delete_model(url=None, api_key=None, customization_id=None) -> bool:
         try:
             response = requests.delete(f'{url}/v1/customizations/{customization_id}', auth=('apikey', api_key))
-
             if response.status_code == 200:
                 print()
 
