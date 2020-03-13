@@ -1,4 +1,4 @@
-polling==0.30
+polling==0.3.0
 tqdm
 PyInquirer
 progress
