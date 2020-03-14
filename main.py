@@ -10,9 +10,9 @@ from tqdm import tqdm
 
 from cli.stt import WatsonSTT
 from cli.visual import VisualSTT
+from cli import clean_up
 
 # @TODO: Add the ability to read the url from the conf.ini. Already implemented in visual.py
-# @TODO: Check to see if the url flag is passed seperately. Cannot set 'required=true' because it conflicts with the visual flag
 
 def main():
     # setting up the command line
@@ -59,7 +59,7 @@ def main():
         custom_stt.create_model(name=name, descr=descr)
         custom_stt.add_corpus(file_path)
         custom_stt.training()
-
+    
     if url and file_path and name is None is file_path is None:
         print("Adding corpus...")
         # @TODO: training a model with an existing uploaded corpus
@@ -67,7 +67,7 @@ def main():
         custom_stt.add_corpus(file_path)
         print("Finished adding corpus")
 
-    if verbose:
+    if url and verbose:
         print("Retrieving Models...")
         model_status(url)
     
@@ -101,7 +101,7 @@ def main():
         pprint(results)
 
     if url and delete:
-        clean_up(url, delete)
+        clean_up.clean_up(url, delete)
         
 
 def _to_date(date:str) -> datetime:
@@ -125,38 +125,6 @@ def model_status(url, print=1) -> None:
 
     return models
 
-
-def clean_up(url, customization_ids):
-    config = ConfigParser()
-    config.read('keys/conf.ini')
-    api_key = config['API_KEY']['WATSON_STT_API']
-
-    if customization_ids[0] == 'all':
-        confirmation = input('Are you sure you want to delete all of the trained models? (y/N): ')
-        confirmation = confirmation.strip().lower()
-        if confirmation in ('y', 'yes'):
-            models = WatsonSTT.all_model_status(url=url, api_key=api_key)
-            if 'customizations' in models.keys():
-                models = models['customizations']
-                for model in tqdm(models, desc="Deleting All Models", leave=False):
-                    _id = model['customization_id']
-                    WatsonSTT.delete_model(url, api_key, _id)
-            else:
-                print("No models to delete.")
-        
-        elif confirmation in ('n', 'no'):
-            print("No models were deleted. Action cancelled.")
-        else:
-            print("Could not understand response.")
-
-        return 
-
-    else:
-        for ids in tqdm(customization_ids, desc="Deleting Customization Models", leave=False):
-            result = WatsonSTT.delete_model(url, api_key, customization_id=ids)
-
-            if not result:
-                return
 
 if __name__ == "__main__":
     main()

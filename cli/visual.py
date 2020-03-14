@@ -9,6 +9,7 @@ from examples import custom_style_2
 from tqdm import tqdm
 
 from cli.stt import WatsonSTT
+from cli import clean_up
 
 class VisualSTT(object):
     def __init__(self):
@@ -16,17 +17,27 @@ class VisualSTT(object):
         self.api_key = None
 
     def account_details(self):
+        path = Path('./keys/conf.ini').resolve()
+        config = ConfigParser()
+        config.read(path)
+        
+        default_url = ""
+        default_apikey = ""
+        if 'URL' in config.sections() and 'API_KEY' in config.sections():
+            default_url = config['URL']['watson_stt_url']
+            default_apikey = config['API_KEY']['WATSON_STT_API']
+
         account_details = [{
             "type": "input",
             "message": "Enter the URL for your Watson Speech-to-Text Model. Visit cloud.ibm.com to find this information.",
             "name": "watson_stt_url",
-            "default": "None"
+            "default": default_url
         },
         {
             "type": "password",
             "message": "Enter your API Key for your Watson Speech-to-Text Model. Visit cloud.ibm.com to find this information.",
             "name": "watson_stt_api_key",
-            "default": "None"
+            "default": default_apikey
         }]
 
         return account_details
@@ -258,7 +269,7 @@ class VisualSTT(object):
                 delete_options = delete_options['delete_all'].strip().lower()
                 
                 if delete_options in ('y', 'yes'):
-                    VisualSTT.clean_up(url=self.url, customization_ids=['all'])
+                    clean_up.clean_up(url=self.url, customization_ids=['all'])
                 elif delete_options in ('n', 'no'):
                     models_id, models_delete = self._delete_specific_models()
                     selected_models = prompt(models_delete, style=custom_style_2)
@@ -267,45 +278,10 @@ class VisualSTT(object):
                     custom_ids_del_models = [models_id[del_model] for del_model in models_to_delete]
 
                     # delete the models 
-                    VisualSTT.clean_up(self.url, custom_ids_del_models)
+                    clean_up.clean_up(self.url, custom_ids_del_models)
         
         except KeyboardInterrupt:
             print("Action Cancelled")
-                
-
-    # @TODO: find a better place to put this function
-    @staticmethod
-    def clean_up(url, customization_ids):
-        config = ConfigParser()
-        config.read('keys/conf.ini')
-        api_key = config['API_KEY']['WATSON_STT_API']
-
-        if customization_ids[0] == 'all':
-            confirmation = input('Are you sure you want to delete all of the trained models? (y/N): ')
-            confirmation = confirmation.strip().lower()
-            if confirmation in ('y', 'yes'):
-                models = WatsonSTT.all_model_status(url=url, api_key=api_key)
-                if 'customizations' in models.keys():
-                    models = models['customizations']
-                    for model in tqdm(models, desc="Deleting All Models", leave=False):
-                        _id = model['customization_id']
-                        WatsonSTT.delete_model(url, api_key, _id)
-                else:
-                    print("No models to delete.")
-            
-            elif confirmation in ('n', 'no'):
-                print("No models were deleted. Action cancelled.")
-            else:
-                print("Could not understand response.")
-
-            return 
-
-        else:
-            for ids in tqdm(customization_ids, desc="Deleting Customization Models", leave=False):
-                result = WatsonSTT.delete_model(url, api_key, customization_id=ids)
-
-                if not result:
-                    return
 
 if __name__ == "__main__":
     VisualSTT().runner()

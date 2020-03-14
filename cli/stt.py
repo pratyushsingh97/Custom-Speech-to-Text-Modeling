@@ -152,8 +152,6 @@ class WatsonSTT(object):
         else:
             raise Exception(response.text)
 
-        
-
     @staticmethod
     def all_model_status(url=None, api_key=None):
         response = requests.get(f'{url}/v1/customizations', auth=('apikey', api_key))
