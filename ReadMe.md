@@ -10,7 +10,7 @@
 
     python3 main.py --visual
 
-![ReadMe%20for%20Open%20Source/main_menu.png](ReadMe%20for%20Open%20Source/main_menu.png)
+![images/main_menu.png](images/main_menu.png)
 
 The CLI prompts by asking you the URL and API key of your Speech-to-Text model. This information is found by clicking on your instance under *Service* tab after logging into [your cloud account](http://cloud.ibm.com). 
 
@@ -20,7 +20,7 @@ When using the visual mode, it saves the URL and API key, so for subsequent runs
 
 ## Direct Mode
 
-![ReadMe%20for%20Open%20Source/direct.png](ReadMe%20for%20Open%20Source/direct.png)
+![images/direct.png](images/direct.png)
 
 To interact directly with the CLI, **don't** pass the *—visual*  flag. When interacting directly, you must pass the *—url* flag.
 
@@ -68,23 +68,23 @@ The CLI prompts you with multiple options to train, evaluate, see existing train
     1. When training, the CLI prompts for the *name of model, description of the model,* and *path of the corpus (or grammar, or out-of-vocabulary words).* For the path, provide the full path of the training data.
     2. Once the information is provided, the CLI will upload the resources, create the model, and train it.
 
-    ![ReadMe%20for%20Open%20Source/training_final.gif](ReadMe%20for%20Open%20Source/training_final.gif)
+    ![images/training_final.gif](images/training_final.gif)
 
 2. Evaluating *aka Transcribing Audio Data*
     1. With the evaluate option chosen, the CLI prompts for the path of the audio file, and presents a list of models to choose to transcribe the audio. You can choose multiple models to transcribe the audio file. 
     2. The models are presented in reverse chronological order from the date they were trained. In other words, *your latest trained model appears first.*
 
-    ![ReadMe%20for%20Open%20Source/evaluate.gif](ReadMe%20for%20Open%20Source/evaluate.gif)
+    ![images/evaluate.gif](images/evaluate.gif)
 
 3. Seeing Trained Models 
     1. The CLI will list your trained models in reverse chronological order.
 
-    ![ReadMe%20for%20Open%20Source/seeing_trained_models.gif](ReadMe%20for%20Open%20Source/seeing_trained_models.gif)
+    ![images/seeing_trained_models.gif](images/seeing_trained_models.gif)
 
 4. Delete Models
     1. You can delete all of your models or select which ones you want to delete.
 
-    ![ReadMe%20for%20Open%20Source/delete.gif](ReadMe%20for%20Open%20Source/delete.gif)
+    ![images/delete.gif](images/delete.gif)
 
     ---
 
