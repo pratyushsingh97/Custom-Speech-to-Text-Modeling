@@ -11,12 +11,38 @@ from tqdm import tqdm
 from cli.stt import WatsonSTT
 from cli import clean_up
 
+# make sure the front end can handle the error thrown by the backend - just print error
+# @TODO: What happens if training fails? (check)
+# @TODO: What happens if adding a corpus fails? (check)
+# @TODO: What happens if creating a model fails? (check)
+# @TODO: What if deleting a model fails?
+# @TODO: What happens if evaluate fails (check)
+# @TODO: add code to grab the exceptions from the backend to the front
+# @TODO: authentication failures?
+
 class VisualSTT(object):
+    """The VisualSTT class is the front-end of the visual component of the CLI.
+    The Visual CLI provides an interactive GUI to form your pipeline of actions./
+
+    Attributes:
+    url: url of the instance
+    apikey: the API key associated with that instance 
+    """
+
     def __init__(self):
         self.url = None
         self.api_key = None
 
-    def account_details(self):
+    def account_details(self) -> list:
+        """ The initial launch screen that asks for your url and apikey.
+        
+        The URL and API KEY are stored in the conf.ini file. If there is a key
+        already available, then it prefills the menu.
+
+        Args: None
+        Returns: a formatted list dictionaries so Py-Inquirer can present them to the user
+        """
+
         path = Path('./keys/conf.ini').resolve()
         config = ConfigParser()
         config.read(path)
@@ -43,7 +69,18 @@ class VisualSTT(object):
         return account_details
 
 
-    def main_questions(self):
+    def main_questions(self) -> list:
+        """ The user is asked to choose one or more options between 
+        Train, Eval, See Available Models, and Delete
+
+        Args:
+            None
+        
+        Returns:
+            main: list of options to take
+        
+        """
+
         main = [{
             'type': 'checkbox',
             'qmark': '🗣 ',
@@ -71,7 +108,16 @@ class VisualSTT(object):
         return main
     
 
-    def train_questions(self):
+    def train_questions(self) -> list:
+        """ Asks the user to provide a name, description, and file path 
+        of the training data
+
+        Args:
+            None
+        
+        Returns:
+            train: list of questions that ask the name, a description of the model, and file path of the training data
+        """
         train = [{
             "type": 'input',
             "message": "Provide a name for your model: ",
@@ -90,7 +136,18 @@ class VisualSTT(object):
 
         return train
     
-    def evaluate_questions(self):
+    def evaluate_questions(self) -> tuple:
+        """ Presents a list of models to transcribe the audio file
+        The options presented are hashed with the customization id as the value. 
+        When the model option is chosen the customization id is passed to transcribe the model.
+
+        Args: None 
+        Returns: 
+           evaluate: an array to pyinquirer to present the user 
+        with the models and a question to ask the file path of the audio file
+            model_id: a dictionary with the model name as the key and the customization as the key
+        """
+
         models_to_id, evaluate_models = self._model_keys()
 
         evaluate = [{
@@ -110,6 +167,14 @@ class VisualSTT(object):
         return models_to_id, evaluate
     
     def _save_url(self, url=None) -> None:
+        """ Helper function that saves the url to the config file
+
+        Args:
+            url: url of the instance
+        Returns:
+            None
+        """
+
         path = Path('./keys/conf.ini').resolve()
 
         config = ConfigParser()
@@ -120,6 +185,14 @@ class VisualSTT(object):
             config.write(configfile)
     
     def _save_api_key(self, api_key=None) -> None:
+        """ Helper function that saves the API to the config file
+
+        Args:
+            url: API Key of the instance
+        Returns:
+            None
+        """
+
         path = Path('./keys/conf.ini').resolve()
 
         config = ConfigParser()
@@ -129,7 +202,20 @@ class VisualSTT(object):
         with open(path, 'w') as configfile:
             config.write(configfile)
     
-    def _model_keys(self):
+    def _model_keys(self) -> tuple:
+        """ Maps the model name and created date along with the description as the key 
+        and the customization id as the value.
+
+        Args:
+        None
+
+        Returns:
+        models_to_id: the dictionary that maps the model name, 
+        created time, and description as the key and the customization id as the key
+        
+        model_name: name of the models to present to user
+        """
+
         all_models = WatsonSTT.all_model_status(url=self.url, api_key=self.api_key)
         all_models = all_models['customizations']
         all_models = sorted(all_models, key=itemgetter('created'), reverse=True) # sort models by date
@@ -145,6 +231,14 @@ class VisualSTT(object):
         return models_to_id, model_name
     
     def delete(self) -> list:
+        """User can choose to delete all models or specific models
+
+        Args
+        None
+
+        Returns
+        delete: questions to ask the user on delete options
+        """
         delete = [{
             "type": "input",
             "name": "delete_all",
@@ -154,15 +248,19 @@ class VisualSTT(object):
         return delete
     
     def _delete_specific_models(self) -> tuple:
-        # all_models = WatsonSTT.all_model_status(url=self.url, api_key=self.api_key)
-        # all_models = all_models['customizations']
-        # lst_models_delete = []
-        # models_to_id = {}
+        """ If the user selects to delete only specific models, 
+        then present the user with specific models to delete
 
-        # for model in all_models:
-        #     key = f"{model['name']} -- {model['description']} -- Created at: {model['created']}"
-        #     lst_models_delete.append({"name": key})
-        #     models_to_id[key] = model['customization_id']
+         The options presented are hashed with the customization id as the value. 
+         When an option is chosen, the customization id is processed to delete the 
+         model 
+
+        Args:
+        None
+
+        Returns:
+
+        """
 
         models_to_id, models_to_delete = self._model_keys() 
 
@@ -178,6 +276,9 @@ class VisualSTT(object):
         return models_to_id, model_choices
     
     def runner(self):
+        """ The runner parses the options selected and then calls 
+        the backend functions from WatsonSTT class
+        """
         try:
             account_details = prompt(self.account_details(), style=custom_style_2)
             
@@ -203,7 +304,7 @@ class VisualSTT(object):
                 self._save_url(self.url)
 
             if account_details['watson_stt_api_key'] is "None":
-                print("Attempting to read in api key from configuration file")
+                print("Attempting to read in API key from configuration file")
                 try:
                     path = Path('./keys/conf.ini').resolve()
                     config = ConfigParser()
@@ -233,10 +334,13 @@ class VisualSTT(object):
                 model_descr = train['model_description']
                 oov_file_path = train['oov_file_path']
 
-                stt = WatsonSTT(url=self.url)
-                stt.create_model(name=model_name, descr=model_descr)
-                stt.add_corpus(oov_file_path)
-                stt.training()
+                try:
+                    stt = WatsonSTT(url=self.url)
+                    stt.create_model(name=model_name, descr=model_descr)
+                    stt.add_corpus(oov_file_path)
+                    stt.training()
+                except Exception as e:
+                    print(e)
 
             if 'Evaluate' in model_options:
                 model_id, evaluate_answers = self.evaluate_questions()
@@ -249,21 +353,32 @@ class VisualSTT(object):
 
                 for index, id in enumerate(custom_ids):
                     stt = WatsonSTT(url=self.url, customization_id=id)
-                    results = stt.transcribe(path_to_audio_file)
+                    try:
+                        results = stt.transcribe(path_to_audio_file)
 
-                    print()
-                    print("*" * 60)
-                    print(f"Transcription Results from {evaluate_models[index]}:")
-                    pprint(results)
-                    print()
-                    print("*" * 60)
-                    print()
+                        print()
+                        print("*" * 60)
+                        print(f"Transcription Results from {evaluate_models[index]}:")
+                        pprint(results)
+                        print()
+                        print("*" * 60)
+                        print()
+                    
+                    except Exception as e:
+                        print("*" * 60)
+                        print()
+                        print(f"Transcribing model {evaluate_models[index]} failed.")
+                        print(e)
+                        print("*" * 60)
+                        print()
 
             
             if 'See Available Models' in model_options:
                 models = WatsonSTT.all_model_status(url=self.url, api_key=self.api_key)
                 pprint(models)
 
+            # check if the model can be deleted
+            # error of the model should be 409
             if 'Delete' in model_options:
                 delete_options = prompt(self.delete(), style=custom_style_2) 
                 delete_options = delete_options['delete_all'].strip().lower()
@@ -279,6 +394,9 @@ class VisualSTT(object):
 
                     # delete the models 
                     clean_up.clean_up(self.url, custom_ids_del_models)
+                else:
+                    print("Only \'yes\' and \'no\' inputs allowed")
+                    raise KeyboardInterrupt
         
         except KeyboardInterrupt:
             print("Action Cancelled")
