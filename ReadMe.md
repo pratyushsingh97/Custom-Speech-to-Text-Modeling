@@ -96,7 +96,6 @@ The CLI prompts you with multiple options to train, evaluate, see existing train
 ### Evaluate
 1. Evaluate your _latest_ trained model:
 `python main.py --url <URL> --audio_file <PATH_TO_AUDIO_FILE> --eval latest`
-This will evaluate your most recent trained model
 2. To evaluate other models, you must pass in their customization id. You can evaluate multiple models at once.
 
 ### Delete
