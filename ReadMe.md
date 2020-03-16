@@ -90,4 +90,20 @@ The CLI prompts you with multiple options to train, evaluate, see existing train
 
     ## Direct Mode
 
-    *Work in progress*
+### Train
+`python main.py --url <URL> --name <NAME> --descr <DESCRIPTION> --oov_file_path <PATH_TO_TRAINING_DATA>`
+
+### Evaluate
+1. Evaluate your _latest_ trained model:
+`python main.py --url <URL> --audio_file <PATH_TO_AUDIO_FILE> --eval latest`
+This will evaluate your most recent trained model
+2. To evaluate other models, you must pass in their customization id. You can evaluate multiple models at once.
+
+### Delete
+1. Delete all models
+`python main.py --url <URL> --delete all`
+2. Delete specific models
+`python main.py --url <URL> --delete <CUSTOMIZATION_IDS>`
+
+### See Models Created and Trained on an Instance
+`python main.py --url <URL> --visual`

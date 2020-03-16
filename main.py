@@ -27,6 +27,9 @@ def main():
     --name: name of the model
     --descr: the description of the model
     --oov_file_path: the filepath of the grammar, vocabulary, or corpus used to train the model
+    --eval: transcribe a model
+    --verbose: list out the models
+    --audio_file: path to the audio file
 
     Returns:
     None
