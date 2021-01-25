@@ -88,7 +88,10 @@ class VisualSTT(object):
             'name': 'custom_models_options',
             'choices': [
                 {
-                    'name': 'Train'
+                    'name': 'Train a New Custom Model'
+                },
+                {
+                    'name': 'Update an Existing Model'
                 },
                 {
                     'name': 'Evaluate'
@@ -130,11 +133,30 @@ class VisualSTT(object):
         },
         {
             "type": 'input',
+            "message": "Specify the language model (i.e. en-NarrowBand)",
+            "name": "model_type"
+        },
+        {
+            "type": 'input',
             "message": "Provide the file path for custom model training data.",
             "name": "oov_file_path"
         }]
 
         return train
+    
+    def update_questions(self) -> list:
+        update = [{
+            "type": 'input',
+            "message": "Provide the customization id for the model:",
+            "name": "customization_id"
+        },
+        {
+            "type": 'input',
+            "message": "Provide the file path for custom model training data.",
+            "name": "oov_file_path"
+        }]
+
+        return update
     
     def evaluate_questions(self) -> tuple:
         """ Presents a list of models to transcribe the audio file
@@ -282,7 +304,7 @@ class VisualSTT(object):
         try:
             account_details = prompt(self.account_details(), style=custom_style_2)
             
-            if account_details['watson_stt_url'] is "None":
+            if account_details['watson_stt_url'] == "None":
                 print()
                 print("Attempting to read in url from configuration file")
                 try:
@@ -303,7 +325,7 @@ class VisualSTT(object):
                 self.url = url
                 self._save_url(self.url)
 
-            if account_details['watson_stt_api_key'] is "None":
+            if account_details['watson_stt_api_key'] == "None":
                 print("Attempting to read in API key from configuration file")
                 try:
                     path = Path('./keys/conf.ini').resolve()
@@ -326,78 +348,93 @@ class VisualSTT(object):
             answers = prompt(self.main_questions(), style=custom_style_2)
             model_options  = answers['custom_models_options']
 
-            if 'Train' in model_options:
-                # ask train questions
-                train = prompt(self.train_questions(), style=custom_style_2)
+            for model_option in model_options:
 
-                model_name = train['model_name']
-                model_descr = train['model_description']
-                oov_file_path = train['oov_file_path']
+                if 'Train' in model_option:
+                    # ask train questions
+                    train = prompt(self.train_questions(), style=custom_style_2)
 
-                try:
-                    stt = WatsonSTT(url=self.url)
-                    stt.create_model(name=model_name, descr=model_descr)
-                    stt.add_corpus(oov_file_path)
-                    stt.training()
-                except Exception as e:
-                    print(e)
+                    model_name = train['model_name']
+                    model_descr = train['model_description']
+                    oov_file_path = train['oov_file_path']
 
-            if 'Evaluate' in model_options:
-                model_id, evaluate_answers = self.evaluate_questions()
-                evaluate_models = prompt(evaluate_answers, style=custom_style_2)
-                
-                path_to_audio_file = evaluate_models['audio_file']
-                evaluate_models = evaluate_models['models_evaluate']
-
-                custom_ids = [model_id[eval_model] for eval_model in evaluate_models]
-
-                for index, id in enumerate(custom_ids):
-                    stt = WatsonSTT(url=self.url, customization_id=id)
                     try:
-                        results = stt.transcribe(path_to_audio_file)
-
-                        print()
-                        print("*" * 60)
-                        print(f"Transcription Results from {evaluate_models[index]}:")
-                        pprint(results)
-                        print()
-                        print("*" * 60)
-                        print()
-                    
+                        stt = WatsonSTT(url=self.url)
+                        stt.create_model(name=model_name, descr=model_descr)
+                        stt.add_corpus(oov_file_path)
+                        stt.training()
                     except Exception as e:
-                        print("*" * 60)
-                        print()
-                        print(f"Transcribing model {evaluate_models[index]} failed.")
                         print(e)
-                        print("*" * 60)
-                        print()
-
-            
-            if 'See Available Models' in model_options:
-                models = WatsonSTT.all_model_status(url=self.url, api_key=self.api_key)
-                pprint(models)
-
-            # check if the model can be deleted
-            # error of the model should be 409
-            if 'Delete' in model_options:
-                delete_options = prompt(self.delete(), style=custom_style_2) 
-                delete_options = delete_options['delete_all'].strip().lower()
                 
-                if delete_options in ('y', 'yes'):
-                    clean_up.clean_up(url=self.url, customization_ids=['all'])
-                elif delete_options in ('n', 'no'):
-                    models_id, models_delete = self._delete_specific_models()
-                    selected_models = prompt(models_delete, style=custom_style_2)
+                if 'Update'in model_option:
+                    update = prompt(self.update_questions(), style=custom_style_2)
                     
-                    models_to_delete = selected_models['models_to_delete']
-                    custom_ids_del_models = [models_id[del_model] for del_model in models_to_delete]
+                    model_customization_id = update['customization_id']
+                    oov_file_path = update['oov_file_path']
 
-                    # delete the models 
-                    clean_up.clean_up(self.url, custom_ids_del_models)
-                else:
-                    print("Only \'yes\' and \'no\' inputs allowed")
-                    raise KeyboardInterrupt
-        
+                    try:
+                        stt = WatsonSTT(url=self.url, customization_id=model_customization_id)
+                        stt.add_corpus(corpus_path=oov_file_path)
+                        stt.training()
+                    except Exception as e:
+                        print(e)
+
+                if 'Evaluate' in model_option:
+                    model_id, evaluate_answers = self.evaluate_questions()
+                    evaluate_models = prompt(evaluate_answers, style=custom_style_2)
+                    
+                    path_to_audio_file = evaluate_models['audio_file']
+                    evaluate_models = evaluate_models['models_evaluate']
+
+                    custom_ids = [model_id[eval_model] for eval_model in evaluate_models]
+
+                    for index, id in enumerate(custom_ids):
+                        stt = WatsonSTT(url=self.url, customization_id=id)
+                        try:
+                            results = stt.transcribe(path_to_audio_file)
+
+                            print()
+                            print("*" * 60)
+                            print(f"Transcription Results from {evaluate_models[index]}:")
+                            pprint(results)
+                            print()
+                            print("*" * 60)
+                            print()
+                        
+                        except Exception as e:
+                            print("*" * 60)
+                            print()
+                            print(f"Transcribing model {evaluate_models[index]} failed.")
+                            print(e)
+                            print("*" * 60)
+                            print()
+
+                
+                if 'See Available Models' in model_option:
+                    models = WatsonSTT.all_model_status(url=self.url, api_key=self.api_key)
+                    pprint(models)
+
+                # check if the model can be deleted
+                # error of the model should be 409
+                if 'Delete' in model_option:
+                    delete_options = prompt(self.delete(), style=custom_style_2) 
+                    delete_options = delete_options['delete_all'].strip().lower()
+                    
+                    if delete_options in ('y', 'yes'):
+                        clean_up.clean_up(url=self.url, customization_ids=['all'])
+                    elif delete_options in ('n', 'no'):
+                        models_id, models_delete = self._delete_specific_models()
+                        selected_models = prompt(models_delete, style=custom_style_2)
+                        
+                        models_to_delete = selected_models['models_to_delete']
+                        custom_ids_del_models = [models_id[del_model] for del_model in models_to_delete]
+
+                        # delete the models 
+                        clean_up.clean_up(self.url, custom_ids_del_models)
+                    else:
+                        print("Only \'yes\' and \'no\' inputs allowed")
+                        raise KeyboardInterrupt
+            
         except KeyboardInterrupt:
             print("Action Cancelled")
 

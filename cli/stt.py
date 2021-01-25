@@ -43,7 +43,7 @@ class WatsonSTT(object):
         self.customization_id = customization_id
         self.status = None
 
-    def create_model(self, name: str, descr:str, model="en-US_BroadbandModel") -> str:
+    def create_model(self, name: str, descr:str, model="en-US_ShortForm_NarrowbandModel") -> str:
         """Creates a model with the name, descr parameters, and it is trained on the model parameter.
 
         Args:
@@ -159,7 +159,11 @@ class WatsonSTT(object):
         corpus_name = path.stem
 
         url = f'{self.url}/v1/customizations/{self.customization_id}/corpora/{corpus_name}'
-        response = requests.post(url, data=data, auth=('apikey', self.API_KEY))
+        params = (('allow_overwrite', True),)
+        response = requests.post(url, 
+                                data=data, 
+                                params=params, 
+                                auth=('apikey', self.API_KEY))
 
         if response.status_code == 201:
             print("Corpus Successfully Added")
